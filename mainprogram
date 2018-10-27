@@ -1,0 +1,165 @@
+package cn.edu.bit.cs;
+
+import java.awt.BorderLayout;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Stack;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+class MyException extends Exception//获取string数组
+{
+	public MyException()
+	{
+		super();
+	}
+	public MyException(String message)
+	{
+		super(message);
+	}
+}//处理数组获取的异常
+class SwingConsole//作为一个类进行初始化的处理
+{
+	public static void run(final JFrame f,final int width,final int height)
+	{
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				f.setTitle(f.getClass().getSimpleName());
+				f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				f.setSize(width, height);
+				f.setVisible(true);
+			}
+		});
+	}
+}
+public class MyCaculator extends JFrame
+{
+	private JTextField textField;
+	private String input;
+	private String operator;
+	public MyCaculator()//类的定义的完成
+	{
+		input="";
+		operator="";
+		Container container=this.getContentPane();
+		JPanel panel=new JPanel();//建立平板的容器
+		textField=new JTextField(30);
+		textField.setEditable(false);
+		textField.setHorizontalAlignment(textField.LEFT);
+		textField.setPreferredSize(new Dimension(200,30));//设置相应的尺寸大小
+		container.add(textField,BorderLayout.NORTH);
+		String[] name= {"7","8","9","+","4","5","6","-","1","2","3","*","0","C","=","/"};
+		panel.setLayout(new GridLayout(4,4,1,1));
+		for (int count=0;count<name.length;count++)
+		{
+			JButton button=new JButton(name[count]);
+			button.addActionListener(new MyActionListener());
+			panel.add(button);
+		}
+		container.add(panel, BorderLayout.CENTER);//注意向容器中加入panel面板，区别textfield和面板的区别
+	}
+	class MyActionListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(ActionEvent e)//重写处理事件的函数
+		{
+			int cnt=0;
+			String actionCommand=e.getActionCommand();
+			if(actionCommand.equals("+")||actionCommand.equals("-")||actionCommand.equals("*")||actionCommand.equals("/"))
+			//如果获取计算的符号
+			{
+				input+=" "+actionCommand+" ";
+			}
+			else if(actionCommand.equals("C"))
+			{
+				input="";
+			}
+			else if(actionCommand.equals("="))
+			{
+				try {
+					input+="="+Calculate(input);
+				}
+				catch(MyException e1){
+					if(e1.getMessage().equals("Infinity"))
+					{
+						input+="="+e1.getMessage();
+					}
+					else 
+					{
+						input=e1.getMessage();
+					}
+				}
+				textField.setText(input);
+				input="";
+				cnt=1;
+			}
+			else 
+			{
+				input+=actionCommand;//输入正常的符号，直接加入相应的数组
+			}
+			if(cnt==0)
+			{
+				textField.setText(input);//进行初始化的操作
+			}
+		}
+	}
+	private String Calculate(String input) throws MyException//进行计算相应的输入的数组
+	//利用栈的思想实现计算
+	{
+		String[] comput=input.split(" ");//过滤掉数组中间的空格
+		Stack<Double> stack=new Stack<>();
+		Double m=Double.parseDouble(comput[0]);
+		stack.push(m);
+		//奇数位为操作符，偶数位为数字
+		for (int i=0;i<comput.length;i++)//遍历处理comput数组
+		{
+			if(i%2==1)//奇数情况
+			{
+				if(comput[i].equals("+"))
+				{
+					stack.push(Double.parseDouble(comput[i+1]));
+				}
+				if(comput[i].equals("-"))
+				{
+					stack.push(-Double.parseDouble(comput[i+1]));
+				}//将减法处理为相应的加法运算
+				if(comput[i].equals("*"))//乘法的优先级
+				{
+					Double temp=stack.peek();
+					stack.pop();
+					stack.push(temp*Double.parseDouble(comput[i+1]));//取出栈顶的元素进行计算
+				}
+				if(comput[i].equals("/"))
+				{
+					Double temp=Double.parseDouble(comput[i+1]);
+					if(temp==0)//除数为零的情况，注意异常的处理
+					{
+						throw new MyException("Infinity");
+					}
+					Double d=stack.peek();
+					stack.push(d/temp);//注意除数为零的情况
+				}
+			}
+		}
+		Double d=0d;
+		while (!stack.empty())//如果未处理完成，注意处理剩余的元素，剩余的元素直接进行相加
+		{
+			d+=stack.peek();
+			stack.pop();
+		}
+		String result=String.valueOf(d);
+		return result;
+	}
+	public static void main(String[] args)
+	{
+		SwingConsole.run(new MyCaculator(), 250, 300);
+	}
+}
